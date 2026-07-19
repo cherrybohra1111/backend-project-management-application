@@ -1,0 +1,22 @@
+{
+  "name": "project-camp-backend",
+  "version": "1.0.0",
+  "description": "a simple project management applications for beginners",
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "backend",
+    "api"
+  ],
+  "license": "ISC",
+  "author": "cherry bohra",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "devDependencies": {
+    "prettier": "3.9.5"
+  }
+}
