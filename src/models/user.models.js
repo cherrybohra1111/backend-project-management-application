@@ -1,12 +1,12 @@
 import mongoose, { Schema } from "mongoose";
 
-const =userSchema(
+const userSchema=new Schema(
     {
         avatar: {
             type : {
                 url: String,
                 localPath: String 
-            }
+            },
             default: {
                 url: `https://placehold.co/200x200`,
                 localPath: ""
@@ -31,10 +31,35 @@ const =userSchema(
         fullName:{
             type: String,
             trim: true
-        }
+        },
+        password: {
+            type:String,
+            requird: [true, "Password is required"]
+        },
+        isEmailVerified:{
+            type : Boolean,
+            default: false
+        },
+        refreshToken: {
+            type: String,
+        },
+        forgotPasswordToken: {
+            type: String,
+        },
+        forgotPasswordExpiry: {
+            type: Date,
+        },
+        emailVerificationToken: {
+            type: String,
+        },
+        emailVerificationExpiry: {
+            type: Date,
+        },
+  },
+  {
+    timestamps: true,
+  },
 
-
-    }
 );
 
 
