@@ -8,7 +8,7 @@ const emailVerificationMailgenContent = (username ,verificationUrl) =>{
             action: {
                 instructions: "To verify your email please click on the following button",
                 button : {
-                    color: ""#22BC66"",
+                    color: "#22BC66",
                     text: "Verify your email",
                     link: verificationUrl,
                 },
