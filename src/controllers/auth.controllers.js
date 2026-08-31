@@ -1,7 +1,7 @@
-import { ApiResponse } from "../utils/api-response";
-import { ApiError } from "../utils/api-error";
-import { asyncHandler } from "../utils/async-handler";
-import { User } from "../models/user.models";
+import { ApiResponse } from "../utils/api-response.js";
+import { ApiError } from "../utils/api-error.js";
+import { asyncHandler } from "../utils/async-handler.js";
+import { User } from "../models/user.models.js";
 import { emailVerificationMailgenContent, sendEmail } from "../utils/mail.js"
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -54,9 +54,9 @@ const registerUser = asyncHandler(async (req,res)=>{
             mailgenContent: emailVerificationMailgenContent(
                 user.username,
                 `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedToken}`
-            )
+            ),
         }
-    )
+    );
 
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken -emailVerificationToken -emailVerificationExpiry",
