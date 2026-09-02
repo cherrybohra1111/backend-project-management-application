@@ -3,6 +3,8 @@ import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { User } from "../models/user.models.js";
 import { emailVerificationMailgenContent, sendEmail } from "../utils/mail.js"
+import jwt from "jsonwebtoken"
+
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -243,6 +245,5 @@ const resendEmailVerification = asyncHandler (async (req, res) => {
         )
 });
 
-//const resendEmailVerification = asyncHandler (async (req, res) => {});
 
 export { registerUser, login, logoutUser, getCurrentUser, verifyEmail , resendEmailVerification};
