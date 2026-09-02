@@ -245,5 +245,54 @@ const resendEmailVerification = asyncHandler (async (req, res) => {
         )
 });
 
+const refreshAccessToken = asyncHandler (async (req, res) => {
+    const incomingRefreshToken =  req.cookies.refreshToken || req.body.refreshToken
+
+    if (!incomingRefreshToken){
+        throw new ApiError(401, "Unauthorized access")
+    }
+
+    try {
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        const user = await User.findById(decodedToken?._id);
+
+        if (!user){
+            throw new ApiError(401, "Invalid refresh token");
+        }
+
+        if (incomingRefreshToken !== user?.refreshToken){
+            throw new ApiError(401, "Refresh token expired");
+        }
+
+        const options  = {
+            httpOnly : true,
+            secure : true
+        }
+
+        const { accessToken, refreshToken: newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+
+        return res
+        .status (200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newRefreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    accessToken, 
+                    refreshToken: newRefreshToken
+                },
+                "Access token refreshed"
+            )
+        )
+    } catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        throw new ApiError(401, "Invalid refresh token");
+    }
+});
 
 export { registerUser, login, logoutUser, getCurrentUser, verifyEmail , resendEmailVerification};
