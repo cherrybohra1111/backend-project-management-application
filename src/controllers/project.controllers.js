@@ -301,5 +301,6 @@ export {
     getProjects,
     addMembersToProject,
     getProjectMembers,
-    updateMemberRole
+    updateMemberRole,
+    deleteMember,
 }
