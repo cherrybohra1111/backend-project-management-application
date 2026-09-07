@@ -227,6 +227,42 @@ const getProjectMembers = asyncHAndler(async (req, res) => {
         .json(new ApiResponse(200, projectMembers, "Project members fetched successfully"))
 });
 
+const updateMemberRole = asyncHandler (async (req, res) => {
+    const { projectId, userId } = req.params;
+    const { newRole } = req.body;
+
+    if (!AvailableUserRole.includes(newRole)){
+        throw new ApiError(400, "Invalid Role");
+    }
+
+    let projectMember = await ProjectMember.findOne({
+        project: new mongoose.Types.ObjectId(projectId),
+        user: new mongoose.Types.ObjectId(userId),
+    }) 
+
+    if (!projectMember){
+        throw new ApiError(400, "Project member not found");
+    }
+
+    projectMember = await ProjectMember.findByIdAndUpdate(
+        projectMember._id,
+        {
+            role: newRole,
+        },
+        { new : true },
+    )
+    
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                projectMember,
+                "Project member role updated successfully"
+            )
+        )
+});
+
 
 export {
     createProject,
@@ -236,4 +272,5 @@ export {
     getProjects,
     addMembersToProject,
     getProjectMembers,
+    updateMemberRole
 }
