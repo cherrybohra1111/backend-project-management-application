@@ -137,9 +137,46 @@ const getProjects = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, projects, "Projects fetched successfully"));
 });
 
+const addMembersToProject = asyncHandler(async (req, res) => {
+    const { email, role } = req.body;
+    const { projectId } = req.params;
+    const user = await User.findOne({email});
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist");
+    }
+
+    const projectMember = await ProjectMember.findOneAndUpdate(
+        {
+            user: new mongoose.Types.ObjectId(user._id),
+            project : new mongoose.Types.ObjectId(projectId),
+        },
+        {
+            $set : {
+                role : role,
+            },
+            $setOnInsert : {
+                user: new mongoose.Types.ObjectId(user._id),
+                project : new mongoose.Types.ObjectId(projectId),
+            }
+        },
+        {
+            new: true,
+            upsert: true,
+        }
+    );
+    return res
+        .status(201)
+        .json(new ApiResponse(201, projectMember, "Project member added successfully"));
+});
+
+
+
 export {
     createProject,
     updateProject,
     deleteProject,
     getProjectById,
+    getProjects,
+    addMembersToProject,
 }
