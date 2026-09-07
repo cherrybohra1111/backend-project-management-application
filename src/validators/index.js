@@ -1,4 +1,5 @@
-import { body } from "express-validator";
+import { body , param } from "express-validator";
+import { AvailableUserRole } from "../utils/constants.js";
 
 const userRegisterValidator = () => {
     return [
@@ -89,11 +90,78 @@ const userResetForgotPasswordValidator = () => {
     ];
 }
 
+const createProjectValidator = () => {
+    return [
+        body("name")
+            .trim()
+            .notEmpty()
+            .withMessage("Project name is required")
+            .isLength({ min: 3, max: 100 })
+            .withMessage("Project name must be between 3 and 100 characters"),
+
+        body("description")
+            .optional()
+            .trim()
+            .isLength({ max: 500 })
+            .withMessage("Description cannot exceed 500 characters"),
+    ];
+};
+
+const projectIdValidator = () => {
+    return [
+        param("projectId")
+            .isMongoId()
+            .withMessage("Invalid project ID"),
+    ];
+};
+
+const projectMemberParamsValidator = () => {
+    return [
+        param("projectId")
+            .isMongoId()
+            .withMessage("Invalid project ID"),
+
+        param("userId")
+            .isMongoId()
+            .withMessage("Invalid user ID"),
+    ];
+};
+
+const updateMemberRoleValidator = () => {
+    return [
+        body("newRole")
+            .notEmpty()
+            .withMessage("New role is required")
+            .isIn(AvailableUserRole)
+            .withMessage("Invalid role"),
+    ];
+};
+
+const addMemberToProjectValidator = () => {
+  return [
+    body("email")
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Email is invalid"),
+    body("role")
+      .notEmpty()
+      .withMessage("Role is required")
+      .isIn(AvailableUserRole)
+      .withMessage("Role is invalid"),
+  ];
+};
 
 export {
     userRegisterValidator,
     userLoginValidator,
     userChangeCurrentPasswordValidator,
     userForgotPasswordValidator,
-    userResetForgotPasswordValidator
+    userResetForgotPasswordValidator,
+    addMemberToProjectValidator,
+    createProjectValidator,
+    projectIdValidator,
+    projectMemberParamsValidator,
+    updateMemberRoleValidator,
 }

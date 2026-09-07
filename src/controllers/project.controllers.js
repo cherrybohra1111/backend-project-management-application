@@ -231,10 +231,6 @@ const updateMemberRole = asyncHandler (async (req, res) => {
     const { projectId, userId } = req.params;
     const { newRole } = req.body;
 
-    if (!AvailableUserRole.includes(newRole)){
-        throw new ApiError(400, "Invalid Role");
-    }
-
     let projectMember = await ProjectMember.findOne({
         project: new mongoose.Types.ObjectId(projectId),
         user: new mongoose.Types.ObjectId(userId),
