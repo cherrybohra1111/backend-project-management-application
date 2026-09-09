@@ -62,7 +62,66 @@ const createTask = asyncHandler (async (req, res) => {
         .json(new ApiResponse(201, task, "Task created successfully"));
 });
 
+const updateTask = asyncHandler (async (req, res) => {
+    const { projectId , taskId } = req.params;
+    const project = await Project.findById(projectId);
+    const { title , description, assignedTo, status } = req.body;
+    
+    if (!project){
+        throw new ApiError(404, "Project not found");
+    }
+    
+    let task =  await Task.findById(taskId);
+    if (!task){
+        throw new ApiError(404, "Task not found");
+    }
+
+    const updateData = {};
+
+    if (title !== undefined) {
+        updateData.title = title;
+    }
+
+    if (description !== undefined) {
+        updateData.description = description;
+    }
+
+    if (assignedTo !== undefined) {
+        updateData.assignedTo = new mongoose.Types.ObjectId(assignedTo);
+    }
+
+    if (status !== undefined) {
+        updateData.status = status;
+    }
+
+    if (req.files?.length) {
+        const newAttachments = req.files.map((file) => ({
+            url: `${process.env.SERVER_URL}/images/${file.filename}`,
+            mimetype: file.mimetype,
+            size: file.size,
+        }));
+
+        updateData.attachments = [
+            ...task.attachments,
+            ...newAttachments,
+        ];
+    }
+
+    task = await Task.findByIdAndUpdate(
+        taskId,
+        updateData,
+        {new : true}
+    );
+
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, task, "Task was updated successfully"))
+
+});
+
 export {
     getTasks,
     createTask,
+    updateTask,
 }
