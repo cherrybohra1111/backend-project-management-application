@@ -167,8 +167,33 @@ const createSubTask = asyncHandler (async( req, res,)=> {
     return res
         .status(201)
         .json(new ApiResponse(201, subtask, "Subtask created successfully"))
-
 });
+
+const deleteSubTask = asyncHandler(async (req, res) => {
+    const { subTaskId, projectId } = req.params;
+
+    const subtask = await Subtask.findById(subTaskId);
+    if (!subtask){
+        throw new ApiError(404, "Subtask does not exist");
+    }
+
+    const task = await Task.findOne({
+        _id: subtask.task,
+        project : projectId,
+    })
+
+    if (!task){
+        throw new ApiError(404, "SubTask not found in the project")
+    }
+
+    subtask = await Subtask.findByIdAndDelete(subTaskId);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, subtask, "Subtask was deleted successfully"))
+});
+
+
 
 export {
     getTasks,
@@ -176,4 +201,5 @@ export {
     updateTask,
     deleteTask,
     createSubTask,
+    deleteSubTask,
 }
