@@ -144,10 +144,36 @@ const deleteTask = asyncHandler (async (req, res) => {
         .json(new ApiResponse(200, task, "Task deleted succesfully"))
 })
 
+const createSubTask = asyncHandler (async( req, res,)=> {
+    const { projectId, taskId }  = req.params;
+    const { title } = req.body;
+
+    const task = await Task.findOne({
+        _id : taskId,
+        project: projectId
+    });
+
+    if (!task){
+        throw new ApiError(404, "Task not found in this project");
+    }
+
+    const subtask = await Subtask.create({
+        title,
+        task: new mongoose.Types.ObjectId(taskId),
+        isCompleted: false,
+        createdBy: new mongoose.Types.ObjectId(req.user._id),
+    });
+
+    return res
+        .status(201)
+        .json(new ApiResponse(201, subtask, "Subtask created successfully"))
+
+});
 
 export {
     getTasks,
     createTask,
     updateTask,
     deleteTask,
+    createSubTask,
 }
