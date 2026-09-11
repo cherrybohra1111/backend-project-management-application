@@ -46,7 +46,36 @@ const deleteNote = asyncHandler(async(req, res) => {
 
 })
 
+const updateNote = asyncHandler(async(req, res)  => {
+    const { projectId, noteId } = req.params;
+    const { content } = req.body;
+
+    let note = await ProjectNote.findOne({
+        _id: noteId,
+        project : projectId,
+    });
+
+    if (!note){
+        throw new ApiError (404, "Note does not exist in the project");
+    }
+
+    note = await ProjectNote.findByIdAndUpdate(
+        noteId,
+        {
+            content,
+        },
+        {
+            new: true
+        }
+    )
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, note, "Note updated successfully"))
+});
+
 export {
     createNote,
     deleteNote,
+    updateNote,
 }
