@@ -120,8 +120,34 @@ const updateTask = asyncHandler (async (req, res) => {
 
 });
 
+const deleteTask = asyncHandler (async (req, res) => {
+    const { projectId , taskId } = req.params;
+    const project = await Project.findById(projectId);
+
+    if (!project){
+        throw new ApiError(404, "Project not found");
+    }
+
+    const task = await Task.findOneAndDelete(
+        {
+            _id : taskId,
+            project: projectId,
+        }
+    );
+    
+    if (!task){
+        throw new ApiError(404, "Task not found in this project");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, task, "Task deleted succesfully"))
+})
+
+
 export {
     getTasks,
     createTask,
     updateTask,
+    deleteTask,
 }
