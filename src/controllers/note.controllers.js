@@ -103,6 +103,32 @@ const getNotes = asyncHandler(async(req, res) => {
 });
 
 
+const getNoteById = asyncHandler(async (req, res) => {
+    const { projectId, noteId } = req.params;
+
+    const note = await ProjectNote.findOne({
+        _id: noteId,
+        project: projectId,
+    }).populate(
+        "createdBy",
+        "username fullName avatar"
+    );
+
+    if (!note) {
+        throw new ApiError(404, "Note not found in the project");
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                note,
+                "Note fetched successfully"
+            )
+        );
+});
+
 export {
     createNote,
     deleteNote,
