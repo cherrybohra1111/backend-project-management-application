@@ -74,8 +74,39 @@ const updateNote = asyncHandler(async(req, res)  => {
         .json(new ApiResponse(200, note, "Note updated successfully"))
 });
 
+const getNotes = asyncHandler(async(req, res) => {
+    const { projectId } = req.params;
+
+    const project = await Project.findById(projectId);
+
+    if (!project){
+        throw new ApiError (404, "Project do not exist");
+    }
+
+    const notes = await ProjectNote.find({
+        project: projectId,
+    }).populate(
+        "createdBy",
+        "username fullName avatar"
+    );
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                notes,
+                "Notes fetched successfully"
+            )
+        );
+
+});
+
+
 export {
     createNote,
     deleteNote,
     updateNote,
+    getNotes,
+    getNoteById,
 }
