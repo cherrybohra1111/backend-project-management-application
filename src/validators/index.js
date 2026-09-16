@@ -1,5 +1,5 @@
 import { body , param } from "express-validator";
-import { AvailableUserRole } from "../utils/constants.js";
+import { AvailableUserRole, AvailableTasKStatues } from "../utils/constants.js";
 
 const userRegisterValidator = () => {
     return [
@@ -153,15 +153,82 @@ const addMemberToProjectValidator = () => {
   ];
 };
 
+const taskIdValidator = () => {
+    return [
+        param("taskId")
+            .isMongoId()
+            .withMessage("Invalid task ID"),
+    ];
+};
+
+const createTaskValidator = () => {
+    return [
+        body("title")
+            .trim()
+            .notEmpty()
+            .withMessage("Task title is required")
+            .isLength({ min: 3, max: 200 })
+            .withMessage("Task title must be between 3 and 200 characters"),
+
+        body("description")
+            .optional()
+            .trim()
+            .isLength({ max: 1000 })
+            .withMessage("Task description cannot exceed 1000 characters"),
+
+        body("assignedTo")
+            .optional()
+            .isMongoId()
+            .withMessage("Invalid assigned user ID"),
+
+        body("status")
+            .optional()
+            .isIn(AvailableTasKStatues)
+            .withMessage("Invalid task status"),
+    ];
+};
+
+
+const updateTaskValidator = () => {
+    return [
+        body("title")
+            .optional()
+            .trim()
+            .isLength({ min: 3, max: 200 })
+            .withMessage("Task title must be between 3 and 200 characters"),
+
+        body("description")
+            .optional()
+            .trim()
+            .isLength({ max: 1000 })
+            .withMessage("Task description cannot exceed 1000 characters"),
+
+        body("assignedTo")
+            .optional()
+            .isMongoId()
+            .withMessage("Invalid assigned user ID"),
+
+        body("status")
+            .optional()
+            .isIn(AvailableTasKStatues)
+            .withMessage("Invalid task status"),
+    ];
+};
+
 export {
     userRegisterValidator,
     userLoginValidator,
     userChangeCurrentPasswordValidator,
     userForgotPasswordValidator,
     userResetForgotPasswordValidator,
+
     addMemberToProjectValidator,
     createProjectValidator,
     projectIdValidator,
     projectMemberParamsValidator,
     updateMemberRoleValidator,
+    
+    taskIdValidator,
+    createTaskValidator,
+    updateTaskValidator
 }
