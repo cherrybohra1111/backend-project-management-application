@@ -215,6 +215,41 @@ const updateTaskValidator = () => {
     ];
 };
 
+const subTaskIdValidator = () => {
+    return [
+        param("subTaskId")
+            .isMongoId()
+            .withMessage("Invalid subtask ID"),
+    ];
+};
+
+const createSubTaskValidator = () => {
+    return [
+        body("title")
+            .trim()
+            .notEmpty()
+            .withMessage("Subtask title is required")
+            .isLength({ min: 1, max: 200 })
+            .withMessage("Subtask title must be between 1 and 200 characters"),
+    ];
+};
+
+const updateSubTaskValidator = () => {
+    return [
+        body("title")
+            .optional()
+            .trim()
+            .isLength({ min: 1, max: 200 })
+            .withMessage("Subtask title must be between 1 and 200 characters"),
+
+        body("isCompleted")
+            .optional()
+            .isBoolean()
+            .withMessage("isCompleted must be a boolean")
+            .toBoolean(),
+    ];
+};
+
 export {
     userRegisterValidator,
     userLoginValidator,
@@ -227,8 +262,12 @@ export {
     projectIdValidator,
     projectMemberParamsValidator,
     updateMemberRoleValidator,
-    
+
     taskIdValidator,
     createTaskValidator,
-    updateTaskValidator
+    updateTaskValidator,
+
+    subTaskIdValidator,
+    createSubTaskValidator,
+    updateSubTaskValidator,
 }
