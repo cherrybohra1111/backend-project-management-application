@@ -250,6 +250,35 @@ const updateSubTaskValidator = () => {
     ];
 };
 
+const noteIdValidator = () => {
+    return [
+        param("noteId")
+            .isMongoId()
+            .withMessage("Invalid note ID"),
+    ];
+};
+
+const createNoteValidator = () => {
+    return [
+        body("content")
+            .trim()
+            .notEmpty()
+            .withMessage("Note content is required")
+            .isLength({ max: 5000 })
+            .withMessage("Note content cannot exceed 5000 characters"),
+    ];
+};
+
+const updateNoteValidator = () => {
+    return [
+        body("content")
+            .optional()
+            .trim()
+            .isLength({ max: 5000 })
+            .withMessage("Note content cannot exceed 5000 characters"),
+    ];
+};
+
 export {
     userRegisterValidator,
     userLoginValidator,
@@ -270,4 +299,8 @@ export {
     subTaskIdValidator,
     createSubTaskValidator,
     updateSubTaskValidator,
+
+    noteIdValidator,
+    createNoteValidator,
+    updateNoteValidator,
 }
