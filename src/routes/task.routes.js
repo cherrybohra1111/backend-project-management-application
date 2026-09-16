@@ -25,7 +25,7 @@ import {
 import { validate } from "../middlewares/validator.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { validateProjectPermission } from "../middlewares/role.middleware.js";
-import { UserRolesEnum , TaskStatusEnum} from "../utils/constants.js";
+import { UserRolesEnum , AvailableUserRole} from "../utils/constants.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
@@ -43,6 +43,7 @@ router
     )
     .post(
         projectIdValidator(),
+        upload.array("attachments"),
         createTaskValidator(),
         validate,
         validateProjectPermission([
@@ -87,6 +88,46 @@ router
         ]),
         deleteTask,
     );
+
+router
+    .route("/:projectId/t/:taskId/subtasks")
+    .post(
+        projectIdValidator(),
+        taskIdValidator(),
+        createSubTaskValidator(),
+        validate,
+        validateProjectPermission([
+            UserRolesEnum.ADMIN,
+            UserRolesEnum.PROJECT_ADMIN,
+        ]),
+        createSubTask
+    )
+
+router
+    .route("/:projectId/st/:subTaskId")
+    .put(
+        projectIdValidator(),
+        subTaskIdValidator(),
+        updateSubTaskValidator(),
+        validate,
+        validateProjectPermission([
+            UserRolesEnum.ADMIN,
+            UserRolesEnum.PROJECT_ADMIN,
+            UserRolesEnum.MEMBER,
+        ]),
+        updateSubTask
+    )
+    .delete(
+        projectIdValidator(),
+        subTaskIdValidator(),
+        validate,
+        validateProjectPermission([
+            UserRolesEnum.ADMIN,
+            UserRolesEnum.PROJECT_ADMIN,
+        ]),
+        deleteSubTask
+    )
+
 
 
 
