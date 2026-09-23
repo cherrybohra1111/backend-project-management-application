@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/async-handler.js";
 import { User } from "../models/user.models.js";
 import { emailVerificationMailgenContent, forgotPasswordMailgenContent, sendEmail } from "../utils/mail.js"
 import jwt from "jsonwebtoken"
+import crypto from "crypto";
 
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -229,7 +230,7 @@ const resendEmailVerification = asyncHandler (async (req, res) => {
             subject: "Please verify your email",
             mailgenContent: emailVerificationMailgenContent(
                 user.username,
-                `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedToken}`
+                `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unHashedToken}`
             ),
         }
     );

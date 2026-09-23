@@ -170,7 +170,7 @@ const addMembersToProject = asyncHandler(async (req, res) => {
         .json(new ApiResponse(201, projectMember, "Project member added successfully"));
 });
 
-const getProjectMembers = asyncHAndler(async (req, res) => {
+const getProjectMembers = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
 
     const project = await Project.findById(projectId);

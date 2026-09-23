@@ -35,7 +35,7 @@ router.route("/login").post(userLoginValidator(),validate,login);
 router.route("/verify-email/:verificationToken").get(verifyEmail);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/forgot-password").post(userForgotPasswordValidator(), validate, forgotPasswordRequest);
-router.route("/reset-password").post(userResetForgotPasswordValidator(), validate, resetForgotPassword);
+router.route("/reset-password/:resetToken").post(userResetForgotPasswordValidator(), validate, resetForgotPassword);
 
 // unsecured route
 router.route("/logout").post(verifyJWT, logoutUser);

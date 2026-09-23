@@ -10,7 +10,7 @@ import {
     getProjectMembers,
     updateMemberRole,
     deleteMember,
-} from "../controllers/project.controllers"
+} from "../controllers/project.controllers.js"
 
 import { validate } from "../middlewares/validator.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
