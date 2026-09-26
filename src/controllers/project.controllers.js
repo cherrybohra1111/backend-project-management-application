@@ -1,6 +1,9 @@
 import { User } from "../models/user.models.js";
 import { Project } from "../models/project.models.js"
 import { ProjectMember } from "../models/projectmember.models.js"
+import { ProjectNote } from "../models/note.models.js"
+import { Task } from "../models/task.models.js"
+import { Subtask } from "../models/subtask.models.js"
 import { ApiResponse } from "../utils/api-response.js";
 import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
@@ -58,11 +61,59 @@ const updateProject = asyncHandler (async(req, res) => {
 
 const deleteProject = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
+    let project;
 
-    const project = await Project.findByIdAndDelete(projectId);
+    const session = await mongoose.startSession();
 
-    if (!project){
-        throw new ApiError(404, "Project not found");
+    try {
+        await session.withTransaction(async () => {
+            await ProjectMember.deleteMany(
+                { project: projectId, },
+                {session}
+            )
+            
+            await ProjectNote.deleteMany(
+                { project: projectId, },
+                {session}
+            )
+            
+            const tasks = await Task.find({ project: projectId })
+            .select("_id")
+            .session(session);
+            
+            for (const t of tasks) {
+                await Subtask.deleteMany(
+                    { task: t._id },
+                    { session }
+                );
+            }
+            
+            await Task.deleteMany(
+                { project: projectId, },
+                {session}
+            )
+
+            project = await Project.findOneAndDelete(
+                { _id: projectId },
+                {session}
+            )
+
+            if (!project){
+                throw new ApiError(404,"Project not Found")
+            }
+        })
+    }
+    catch (error) {
+        if (error instanceof ApiError ){
+            throw error;
+        }
+        throw new ApiError(
+            500,
+            "Failed to delete the Project and its components"
+        );
+    }
+    finally {
+        await session.endSession();
     }
 
     return res
