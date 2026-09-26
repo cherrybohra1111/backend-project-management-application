@@ -302,6 +302,17 @@ const updateMemberRole = asyncHandler (async (req, res) => {
         throw new ApiError(400, "Project member not found");
     }
 
+    if (projectMember.role === UserRolesEnum.ADMIN){
+        let admins =  await ProjectMember.find({
+            project: new mongoose.Types.ObjectId(projectId),
+            role : UserRolesEnum.ADMIN,
+        }) 
+
+        if (admins.length === 1 && newRole!==UserRolesEnum.ADMIN){
+            throw new ApiError(403, "The only project admin's role can not be modified")
+        }
+    }
+
     projectMember = await ProjectMember.findByIdAndUpdate(
         projectMember._id,
         {
@@ -336,6 +347,17 @@ const deleteMember = asyncHandler (async (req, res) => {
     if (!projectMember){
         throw new ApiError(400, "Project member not found");
     };
+
+    if (projectMember.role === UserRolesEnum.ADMIN){
+        let admins =  await ProjectMember.find({
+            project: new mongoose.Types.ObjectId(projectId),
+            role : UserRolesEnum.ADMIN,
+        }) 
+
+        if (admins.length ===1){
+            throw new ApiError(403, "The only project admin can not be deleted")
+        }
+    }
 
     projectMember = await ProjectMember.findByIdAndDelete(projectMember._id);
 
