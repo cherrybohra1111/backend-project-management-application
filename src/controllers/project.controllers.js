@@ -134,7 +134,6 @@ const getProjectById = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, project, "Project fetched successfully"));
 });
-
 const getProjects = asyncHandler(async (req, res) => {
     const projects = await ProjectMember.aggregate([
         {
@@ -143,18 +142,18 @@ const getProjects = asyncHandler(async (req, res) => {
             },
         },
         {
-            $lookup :{
-                from : "projects",
-                localField : "project",
-                foreignField : "_id" ,
-                as : "projects" ,
-                pipeline : [
+            $lookup: {
+                from: "projects",
+                localField: "project",
+                foreignField: "_id",
+                as: "project",
+                pipeline: [
                     {
-                        $lookup : {
+                        $lookup: {
                             from: "projectmembers",
                             localField: "_id",
-                            foreignField : "project",
-                            as : "projectmembers",
+                            foreignField: "project",
+                            as: "projectmembers",
                         },
                     },
                     {
@@ -164,28 +163,40 @@ const getProjects = asyncHandler(async (req, res) => {
                             },
                         },
                     },
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1,
+                            description: 1,
+                            members: 1,
+                            createdBy: 1,
+                            createdAt: 1,
+                        },
+                    },
                 ],
             },
         },
         {
-            $project : {
-                project : {
-                    _id : 1,
-                    name : 1,
-                    description : 1,
-                    members : 1,
-                    createdBy : 1,
-                    createdAt : 1,
-                },
-                role : 1,
+            $unwind: "$project",
+        },
+        {
+            $project: {
                 _id: 0,
+                project: 1,
+                role: 1,
             },
         },
     ]);
 
     return res
-    .status(200)
-    .json(new ApiResponse(200, projects, "Projects fetched successfully"));
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                projects,
+                "Projects fetched successfully"
+            )
+        );
 });
 
 const addMembersToProject = asyncHandler(async (req, res) => {
