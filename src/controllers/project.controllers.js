@@ -10,25 +10,53 @@ import { asyncHandler } from "../utils/async-handler.js";
 import mongoose from "mongoose";
 import { AvailableUserRole, UserRolesEnum } from "../utils/constants.js";
 
+import { unlink } from "node:fs/promises";
+import { basename, join } from "node:path";
+
 
 const createProject = asyncHandler (async (req,res)=>{
     const { name , description } = req.body;
 
-    const project = await Project.create({
-        name,
-        description,
-        createdBy : new mongoose.Types.ObjectId(req.user._id),
-    });
+    const session = await mongoose.startSession();
+    let project;
 
-    if (!project) {
-        throw new ApiError(500, "Project couldn't be created")
+    try {
+        await session.withTransaction(async () => {
+            const [createdProject] = await Project.create(
+                [{
+                    name,
+                    description,
+                    createdBy: req.user._id,
+                }],
+                { session }
+            );
+
+            project = createdProject;
+
+
+            await ProjectMember.create(
+                [{
+                    user: req.user._id,
+                    project: project._id,
+                    role: UserRolesEnum.ADMIN,
+                }],
+                { session }
+            );
+        })
     }
+    catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
 
-    await ProjectMember.create({
-        user: new mongoose.Types.ObjectId(req.user._id),
-        project: new mongoose.Types.ObjectId(project._id),
-        role: UserRolesEnum.ADMIN,
-    })
+        throw new ApiError(
+            500,
+            "Failed to create the project"
+        );
+    }
+    finally {
+        await session.endSession();
+    }
 
     return res
         .status(201)
