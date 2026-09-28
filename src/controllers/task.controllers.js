@@ -26,6 +26,94 @@ const getTasks = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, tasks, "Tasks fetched successfully"));
 });
 
+const getTaskById = asyncHandler(async (req, res) => {
+
+    const { projectId, taskId } = req.params;
+
+    const task = await Task.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(taskId),
+                project: new mongoose.Types.ObjectId(projectId),
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "assignedTo",
+                foreignField: "_id",
+                as: "assignedTo",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $lookup: {
+                from: "subtasks",
+                localField: "_id",
+                foreignField: "task",
+                as: "subtasks",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "createdBy",
+                            foreignField: "_id",
+                            as: "createdBy",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        _id: 1,
+                                        username: 1,
+                                        fullName: 1,
+                                        avatar: 1,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $addFields: {
+                            createdBy: {
+                                $arrayElemAt: ["$createdBy", 0],
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $addFields: {
+                assignedTo: {
+                    $arrayElemAt: ["$assignedTo", 0],
+                },
+            },
+        },
+    ]);
+
+    if (!task || task.length === 0) {
+        throw new ApiError(404, "Task not found in this project");
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                task[0],
+                "Task fetched successfully"
+            )
+        );
+});
+
 const createTask = asyncHandler (async (req, res) => {
     const { projectId } = req.params;
     const { title , description, assignedTo, status } = req.body;
