@@ -170,13 +170,37 @@ const updateTask = asyncHandler (async (req, res) => {
     if (!project){
         throw new ApiError(404, "Project not found");
     }
-    
-    let task =  await Task.findById(taskId);
+
+    let task = await Task.findOne(
+        {
+            _id : taskId,
+            project: projectId,
+        }
+    );
+
     if (!task){
-        throw new ApiError(404, "Task not found");
+        throw new ApiError(404, "Task not found in this project");
     }
 
     const updateData = {};
+
+    if (assignedTo !== undefined) {
+        if (assignedTo === null) {
+            updateData.assignedTo = null;
+        } else {
+            const member = await ProjectMember.findOne({
+                user: assignedTo,
+                project: projectId,
+            });
+    
+            if (!member) {
+                throw new ApiError(400, "Assignee must be a member of this project");
+            }
+
+            updateData.assignedTo = new mongoose.Types.ObjectId(assignedTo);
+        }
+    }
+
 
     if (title !== undefined) {
         updateData.title = title;
@@ -184,10 +208,6 @@ const updateTask = asyncHandler (async (req, res) => {
 
     if (description !== undefined) {
         updateData.description = description;
-    }
-
-    if (assignedTo !== undefined) {
-        updateData.assignedTo = new mongoose.Types.ObjectId(assignedTo);
     }
 
     if (status !== undefined) {
@@ -207,12 +227,20 @@ const updateTask = asyncHandler (async (req, res) => {
         ];
     }
 
-    task = await Task.findByIdAndUpdate(
-        taskId,
+    if (Object.keys(updateData).length === 0) {
+        throw new ApiError(400, "At least one field must be provided to update");
+    }
+
+
+    task = await Task.findOneAndUpdate(
+        { _id: taskId, project: projectId },
         updateData,
-        {new : true}
+        { new: true }
     );
 
+    if (!task){
+        throw new ApiError(404, "Task not found in this project");
+    }
 
     return res
         .status(200)
