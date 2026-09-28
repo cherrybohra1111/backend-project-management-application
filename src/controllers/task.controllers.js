@@ -123,6 +123,18 @@ const createTask = asyncHandler (async (req, res) => {
         throw new ApiError(404, "Project not found");
     }
 
+    if (assignedTo !== undefined) {
+        const member = await ProjectMember.findOne({
+            user: assignedTo,
+            project: projectId,
+        });
+
+        if (!member) {
+            throw new ApiError(400, "Assignee must be a member of this project");
+        }
+    }
+
+
     const files = req.files || [];
 
     const attachments = files.map((file) => {
