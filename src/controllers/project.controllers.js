@@ -90,6 +90,7 @@ const updateProject = asyncHandler (async(req, res) => {
 const deleteProject = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
     let project;
+    let tasks;
 
     const session = await mongoose.startSession();
 
@@ -105,9 +106,9 @@ const deleteProject = asyncHandler(async (req, res) => {
                 {session}
             )
             
-            const tasks = await Task.find({ project: projectId })
-            .select("_id")
-            .session(session);
+            tasks = await Task.find({ project: projectId })
+                    .select("_id attachments")
+                    .session(session);
             
             for (const t of tasks) {
                 await Subtask.deleteMany(
@@ -143,6 +144,26 @@ const deleteProject = asyncHandler(async (req, res) => {
     finally {
         await session.endSession();
     }
+
+    for (const t of tasks) {
+        const results = await Promise.allSettled(
+            t.attachments.map((attachment) => {
+                const filename = basename(
+                    decodeURIComponent(new URL(attachment.url).pathname)
+                );
+                const filePath = join(process.cwd(), "public", "images", filename);
+            
+                return unlink(filePath);
+            })
+        );
+                
+        for (const result of results) {
+            if (result.status === "rejected") {
+                console.error("Failed to delete task attachment:", result.reason);
+            }
+        }
+    }
+    
 
     return res
         .status(200)
