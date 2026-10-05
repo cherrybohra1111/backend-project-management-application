@@ -13,3 +13,6 @@ export const TaskStatusEnum = {
 }
 
 export const AvailableTasKStatues = Object.values(TaskStatusEnum);
+
+export const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+export const maxAttachments = 5; 
