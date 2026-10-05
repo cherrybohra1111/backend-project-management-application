@@ -301,20 +301,63 @@ const deleteTask = asyncHandler (async (req, res) => {
         throw new ApiError(404, "Project not found");
     }
 
-    const task = await Task.findOneAndDelete(
-        {
-            _id : taskId,
-            project: projectId,
+    const session = await mongoose.startSession();
+    let task;
+
+    try {
+        await session.withTransaction(async () => {
+            task = await Task.findOneAndDelete(
+                {
+                    _id: taskId,
+                    project: projectId,
+                },
+                { session }
+            );
+
+            if (!task) {
+                throw new ApiError(404, "Task not found in this project");
+            }
+
+            await Subtask.deleteMany(
+                { task: task._id },
+                { session }
+            );
+        });
+    } 
+    catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
         }
+
+        throw new ApiError(
+            500,
+            "Failed to delete the task and its subtasks"
+        );
+    }
+    finally {
+        await session.endSession();
+    }
+
+    const results = await Promise.allSettled(
+        task.attachments.map((attachment) => {
+            const filename = basename(
+                decodeURIComponent(new URL(attachment.url).pathname)
+            );
+            const filePath = join(process.cwd(), "public", "images", filename);
+
+            return unlink(filePath);
+        })
     );
-    
-    if (!task){
-        throw new ApiError(404, "Task not found in this project");
+
+    for (const result of results) {
+        if (result.status === "rejected") {
+            console.error("Failed to delete task attachment:", result.reason);
+        }
     }
 
     return res
         .status(200)
-        .json(new ApiResponse(200, task, "Task deleted succesfully"))
+        .json(new ApiResponse(200, task, "Task deleted successfully"))
 })
 
 const createSubTask = asyncHandler (async( req, res,)=> {
@@ -390,6 +433,9 @@ const updateSubTask = asyncHandler(async (req, res) => {
 
     
     if (title !== undefined) {
+        if (req.user.role === UserRolesEnum.MEMBER ){
+            throw new ApiError(403, "Member not allowed to update title")
+        }
         updateData.title = title;
     }
     
@@ -397,6 +443,10 @@ const updateSubTask = asyncHandler(async (req, res) => {
         updateData.isCompleted = isCompleted;
     }
     
+    if (Object.keys(updateData).length === 0) {
+        throw new ApiError(400, "At least one field must be provided to update");
+    }
+
 
     subtask = await Subtask.findByIdAndUpdate(
         subTaskId,
@@ -413,6 +463,7 @@ const updateSubTask = asyncHandler(async (req, res) => {
 
 export {
     getTasks,
+    getTaskById,
     createTask,
     updateTask,
     deleteTask,
