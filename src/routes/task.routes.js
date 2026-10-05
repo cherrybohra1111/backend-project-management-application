@@ -27,6 +27,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { validateProjectPermission } from "../middlewares/role.middleware.js";
 import { UserRolesEnum , AvailableUserRole} from "../utils/constants.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { handleUploadError } from "../middlewares/upload-error.middleware.js";
 
 const router = Router();
 router.use(verifyJWT);
@@ -43,13 +44,15 @@ router
     )
     .post(
         projectIdValidator(),
-        upload.array("attachments"),
-        createTaskValidator(),
         validate,
         validateProjectPermission([
             UserRolesEnum.ADMIN,
             UserRolesEnum.PROJECT_ADMIN
         ]),
+        upload.array("attachments"),
+        createTaskValidator(),
+        handleUploadError,
+        validate,
         createTask
     )
 
@@ -69,13 +72,15 @@ router
     .put(
         projectIdValidator(),
         taskIdValidator(),
-        upload.array("attachments"),
-        updateTaskValidator(),
         validate,
         validateProjectPermission([
             UserRolesEnum.ADMIN,
             UserRolesEnum.PROJECT_ADMIN,
         ]),
+        upload.array("attachments"),
+        handleUploadError,
+        updateTaskValidator(),
+        validate,
         updateTask,
     )
     .delete(
