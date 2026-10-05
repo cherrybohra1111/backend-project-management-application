@@ -8,6 +8,10 @@ import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import mongoose from "mongoose";
 import { AvailableUserRole, UserRolesEnum } from "../utils/constants.js";
+import { unlink } from "node:fs/promises";
+import { basename, join } from "node:path";
+import { maxAttachments } from "../utils/constants.js";
+import { cleanupUploadedFiles } from "../utils/cleanupUploadedFiles.js";
 
 const getTasks = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
@@ -117,77 +121,18 @@ const getTaskById = asyncHandler(async (req, res) => {
 const createTask = asyncHandler (async (req, res) => {
     const { projectId } = req.params;
     const { title , description, assignedTo, status } = req.body;
-    const project = await Project.findById(projectId);
 
-    if (!project){
-        throw new ApiError(404, "Project not found");
-    }
+    const uploadedFiles = req.files || [];
+    let task;
 
-    if (assignedTo !== undefined) {
-        const member = await ProjectMember.findOne({
-            user: assignedTo,
-            project: projectId,
-        });
-
-        if (!member) {
-            throw new ApiError(400, "Assignee must be a member of this project");
-        }
-    }
-
-
-    const files = req.files || [];
-
-    const attachments = files.map((file) => {
-        return {
-            url: `${process.env.SERVER_URL}/images/${file.filename}`,
-            mimetype : file.mimetype,
-            size: file.size,
-        }
-    });
-
-    const task = await Task.create({
-        title,
-        description,
-        project: new mongoose.Types.ObjectId(projectId),
-        assignedTo: assignedTo
-            ? new mongoose.Types.ObjectId(assignedTo)
-            : undefined,
-        status,
-        assignedBy: new mongoose.Types.ObjectId(req.user._id),
-        attachments,
-    });
+    try {
+        const project = await Project.findById(projectId);
     
-    return res
-        .status(201)
-        .json(new ApiResponse(201, task, "Task created successfully"));
-});
-
-const updateTask = asyncHandler (async (req, res) => {
-    const { projectId , taskId } = req.params;
-    const project = await Project.findById(projectId);
-    const { title , description, assignedTo, status } = req.body;
-    
-    if (!project){
-        throw new ApiError(404, "Project not found");
-    }
-
-    let task = await Task.findOne(
-        {
-            _id : taskId,
-            project: projectId,
+        if (!project){
+            throw new ApiError(404, "Project not found");
         }
-    );
-
-    if (!task){
-        throw new ApiError(404, "Task not found in this project");
-    }
-
-    const updateData = {};
-
-    if (assignedTo !== undefined) {
-        if (assignedTo === null) {
-            updateData.assignedTo = null;
-        } else {
+    
+        if (assignedTo) {
             const member = await ProjectMember.findOne({
                 user: assignedTo,
                 project: projectId,
@@ -196,56 +141,156 @@ const updateTask = asyncHandler (async (req, res) => {
             if (!member) {
                 throw new ApiError(400, "Assignee must be a member of this project");
             }
+        }
 
-            updateData.assignedTo = new mongoose.Types.ObjectId(assignedTo);
+    
+        const attachments = uploadedFiles.map((file) => {
+            return {
+                url: `${process.env.SERVER_URL}/images/${file.filename}`,
+                mimetype : file.mimetype,
+                size: file.size,
+            }
+        });
+    
+        task = await Task.create({
+            title,
+            description,
+            project: new mongoose.Types.ObjectId(projectId),
+            assignedTo: assignedTo
+                ? new mongoose.Types.ObjectId(assignedTo)
+                : undefined,
+            status,
+            assignedBy: new mongoose.Types.ObjectId(req.user._id),
+            attachments,
+        });
+    }
+    catch (error) {
+        if (uploadedFiles.length > 0){
+            await cleanupUploadedFiles(uploadedFiles);
+        }
+        
+        if (error instanceof ApiError){
+            throw error;
+        }
+        else {
+            throw new ApiError(500,'Failed to create the task' )
         }
     }
 
+    return res
+        .status(201)
+        .json(new ApiResponse(201, task, "Task created successfully"));
+});
 
-    if (title !== undefined) {
-        updateData.title = title;
+const updateTask = asyncHandler (async (req, res) => {
+    const { projectId , taskId } = req.params;
+    const { title , description, assignedTo, status } = req.body;
+    
+    const uploadedFiles = req.files || [];
+    let task;
+    
+    try {
+        const project = await Project.findById(projectId);
+
+        if (!project){
+            throw new ApiError(404, "Project not found");
+        }
+    
+        task = await Task.findOne(
+            {
+                _id : taskId,
+                project: projectId,
+            }
+        );
+    
+        if (!task){
+            throw new ApiError(404, "Task not found in this project");
+        }
+    
+        const updateData = {};
+    
+        if (assignedTo) {
+            if (assignedTo === null) {
+                updateData.assignedTo = null;
+            } else {
+                const member = await ProjectMember.findOne({
+                    user: assignedTo,
+                    project: projectId,
+                });
+        
+                if (!member) {
+                    throw new ApiError(400, "Assignee must be a member of this project");
+                }
+    
+                updateData.assignedTo = new mongoose.Types.ObjectId(assignedTo);
+            }
+        }
+    
+    
+        if (title !== undefined) {
+            updateData.title = title;
+        }
+    
+        if (description !== undefined) {
+            updateData.description = description;
+        }
+    
+        if (status !== undefined) {
+            updateData.status = status;
+        }
+    
+        if (uploadedFiles.length) {
+            if (task.attachments.length + uploadedFiles.length > maxAttachments) {
+                throw new ApiError(
+                    400,
+                    `A task can have at most ${maxAttachments} attachments`
+                );
+            }
+    
+            const newAttachments = uploadedFiles.map((file) => ({
+                url: `${process.env.SERVER_URL}/images/${file.filename}`,
+                mimetype: file.mimetype,
+                size: file.size,
+            }));
+    
+            updateData.attachments = [
+                ...task.attachments,
+                ...newAttachments,
+            ];
+        }
+    
+        if (Object.keys(updateData).length === 0) {
+            throw new ApiError(400, "At least one field must be provided to update");
+        }
+    
+    
+        task = await Task.findOneAndUpdate(
+            { _id: taskId, project: projectId },
+            updateData,
+            { new: true }
+        );
+    
+        if (!task){
+            throw new ApiError(404, "Task not found in this project");
+        }
     }
-
-    if (description !== undefined) {
-        updateData.description = description;
+    catch (error) {
+        if (uploadedFiles.length > 0){
+            await cleanupUploadedFiles(uploadedFiles);
+        }
+        
+        if (error instanceof ApiError){
+            throw error;
+        }
+        else {
+            throw new ApiError(500,'Failed to update the task' )
+        }
     }
-
-    if (status !== undefined) {
-        updateData.status = status;
-    }
-
-    if (req.files?.length) {
-        const newAttachments = req.files.map((file) => ({
-            url: `${process.env.SERVER_URL}/images/${file.filename}`,
-            mimetype: file.mimetype,
-            size: file.size,
-        }));
-
-        updateData.attachments = [
-            ...task.attachments,
-            ...newAttachments,
-        ];
-    }
-
-    if (Object.keys(updateData).length === 0) {
-        throw new ApiError(400, "At least one field must be provided to update");
-    }
-
-
-    task = await Task.findOneAndUpdate(
-        { _id: taskId, project: projectId },
-        updateData,
-        { new: true }
-    );
-
-    if (!task){
-        throw new ApiError(404, "Task not found in this project");
-    }
-
+    
+        
     return res
         .status(200)
         .json(new ApiResponse(200, task, "Task was updated successfully"))
-
 });
 
 const deleteTask = asyncHandler (async (req, res) => {
