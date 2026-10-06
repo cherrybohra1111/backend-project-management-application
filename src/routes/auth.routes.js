@@ -9,7 +9,7 @@ import {
         refreshAccessToken, 
         forgotPasswordRequest,
         resetForgotPassword,
-        changeCurrentPassword  
+        changeCurrentPassword 
     } 
     from "../controllers/auth.controllers.js";
 
@@ -20,7 +20,8 @@ import {
         userLoginValidator, 
         userChangeCurrentPasswordValidator,
         userForgotPasswordValidator,
-        userResetForgotPasswordValidator
+        userResetForgotPasswordValidator,
+        resetTokenValidator,
         } 
         from "../validators/index.js";
 
@@ -35,9 +36,13 @@ router.route("/login").post(userLoginValidator(),validate,login);
 router.route("/verify-email/:verificationToken").get(verifyEmail);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/forgot-password").post(userForgotPasswordValidator(), validate, forgotPasswordRequest);
-router.route("/reset-password/:resetToken").post(userResetForgotPasswordValidator(), validate, resetForgotPassword);
+router.route("/reset-password/:resetToken").post(
+        resetTokenValidator(),
+        userResetForgotPasswordValidator(), 
+        validate, 
+        resetForgotPassword);
 
-// unsecured route
+// Public route
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
 router.route("/change-password").post(verifyJWT,userChangeCurrentPasswordValidator(), validate, changeCurrentPassword);

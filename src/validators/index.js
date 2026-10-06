@@ -204,10 +204,10 @@ const updateTaskValidator = () => {
             .withMessage("Task description cannot exceed 1000 characters"),
 
         body("assignedTo")
-            .optional()
+            .optional({ values: "null" })
             .isMongoId()
             .withMessage("Invalid assigned user ID"),
-
+        
         body("status")
             .optional()
             .isIn(AvailableTasKStatues)
@@ -272,10 +272,19 @@ const createNoteValidator = () => {
 const updateNoteValidator = () => {
     return [
         body("content")
-            .optional()
             .trim()
+            .notEmpty()
+            .withMessage("Note content is required")
             .isLength({ max: 5000 })
             .withMessage("Note content cannot exceed 5000 characters"),
+    ];
+};
+
+const resetTokenValidator = () => {
+    return [
+        param("resetToken")
+            .notEmpty()
+            .withMessage("Reset token is required"),
     ];
 };
 
@@ -303,4 +312,6 @@ export {
     noteIdValidator,
     createNoteValidator,
     updateNoteValidator,
+
+    resetTokenValidator,
 }
