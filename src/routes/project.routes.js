@@ -68,6 +68,7 @@ router
   .get(  
         projectIdValidator(),
         validate,
+        validateProjectPermission(AvailableUserRole),
         getProjectMembers
     )
   .post(
