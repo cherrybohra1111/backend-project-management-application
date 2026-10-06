@@ -26,7 +26,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req,res)=>{
-    const {email, username, password, role} = req.body
+    const {email, username, password, fullName} = req.body
 
     const existedUser = await User.findOne({
         $or: [{email}, {username}]
@@ -40,6 +40,7 @@ const registerUser = asyncHandler(async (req,res)=>{
         email,
         password,
         username,
+        fullName,
         isEmailVerified: false
     })
 
@@ -56,7 +57,7 @@ const registerUser = asyncHandler(async (req,res)=>{
             subject: "Please verify your email",
             mailgenContent: emailVerificationMailgenContent(
                 user.username,
-                `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedToken}`
+                `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unHashedToken}`
             ),
         }
     );
@@ -111,7 +112,7 @@ const login = asyncHandler(async(req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
     }
 
     return res
@@ -146,7 +147,7 @@ const logoutUser = asyncHandler (async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
     }
 
     return res
@@ -268,7 +269,7 @@ const refreshAccessToken = asyncHandler (async (req, res) => {
 
         const options  = {
             httpOnly : true,
-            secure : true
+            secure: process.env.NODE_ENV === "production",
         }
 
         const { accessToken, refreshToken: newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
