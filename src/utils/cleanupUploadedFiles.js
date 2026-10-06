@@ -7,7 +7,7 @@ export const cleanupUploadedFiles = async (files) => {
 
     for (const result of results) {
         if (result.status === "rejected") {
-            throw new ApiError("Failed to remove uploaded file:", result.reason);
+            console.error("Failed to remove uploaded file:", result.reason);
         }
     }
 };

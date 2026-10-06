@@ -1,8 +1,8 @@
 import { validationResult } from "express-validator";
 import { ApiError } from "../utils/api-error.js";
+import { cleanupUploadedFiles } from "../utils/cleanupUploadedFiles.js";
 
-
-export const validate = (req, res, next) => {
+export const validate = async (req, res, next) => {
     const errors = validationResult(req);
 
     if (errors.isEmpty()) {
@@ -15,6 +15,9 @@ export const validate = (req, res, next) => {
             [err.path] : err.msg,
     }));
 
-    throw new ApiError(422, "Recieved data is not valid",
+    const files = Array.isArray(req.files) ? req.files : [];
+    await cleanupUploadedFiles(files);
+    
+    throw new ApiError(422, "Received data is not valid",
         extractedErrors);
 };
